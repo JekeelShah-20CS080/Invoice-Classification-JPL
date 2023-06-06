@@ -10,25 +10,52 @@ from nltk.stem import WordNetLemmatizer
 from pywsd.utils import lemmatize_sentence
 
 # nltk.download()
-nltk.download('stopwords')
-nltk.download('wordnet')
-nltk.download('omw-1.4')
-nltk.download('averaged_perceptron_tagger')
-
-
-wordnet_lemmatizer = WordNetLemmatizer()
-
+# nltk.download('stopwords')
+# nltk.download('wordnet')
+# nltk.download('omw-1.4')
+# nltk.download('averaged_perceptron_tagger')
+print("=====================================================================")
+print("Before Preprocessing: ")
 df = pd.read_csv('invoices.csv')
-
-
-# def remove_escape_sequences(text):
-#     cleaned_text = ' '.join(text)
-#     cleaned_text = re.sub(r'\\n', ' ', cleaned_text)
-#     cleaned_text = re.sub(r'\\r', ' ', cleaned_text)
-#     cleaned_text = re.sub(r'\\t', ' ', cleaned_text)
-#     cleaned_text = re.sub(r'\s+', ' ', cleaned_text)  # Replace consecutive whitespace characters with a single space
-#     return cleaned_text
-
-# # Apply the function to the pages column
-# df['pages'] = df['pages'].apply(remove_escape_sequences)
+df.drop(df.columns[0], axis=1, inplace=True)
+df.rename(columns={"pages": "data"}, inplace=True)
 print(df.head())
+
+print("\n=====================================================================")
+
+print("After Preprocessing: ")
+df['data'] = df['data'].str.lower()
+
+# Remove unnecessary blank spaces
+df['data'] = df['data'].str.strip()
+
+df['data'] = df['data'].str.lstrip()
+df['data'] = df['data'].apply(lambda x: ' '.join(x.split()))
+
+df['data'] = df['data'].apply(lambda x: re.sub(r'[^\w\s]', '', x))
+
+# Replace multiple consecutive spaces with a single space
+df['data'] = df['data'].apply(lambda x: re.sub(r'\s+', ' ', x))
+
+# Display the updated dataframe
+print(df.head())
+print("\n================================================================")
+
+print("After Tokenization: ")
+df['tokens'] = df['data'].apply(lambda x: word_tokenize(x))
+print(df.head())
+
+print("\n================================================================")
+print('After Removing Stopwords: ')
+stop_words = set(stopwords.words('english'))
+
+df['tokens'] = df['tokens'].apply(lambda x: [word for word in x if word.lower() not in stop_words])
+print(df.head())
+
+print("\n================================================================")
+print('After Lemmatization: ')
+lemmatizer = WordNetLemmatizer()
+df['tokens'] = df['tokens'].apply(lambda x: [lemmatizer.lemmatize(word) for word in x])
+print(df.head())
+
+df.to_csv('cleaned_invoices.csv')
