@@ -1,61 +1,29 @@
-import pandas as pd
-import numpy as np
+from pdf2image import convert_from_path
 import os
-import re
-import string
-import nltk
-from nltk.corpus import stopwords
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
-from pywsd.utils import lemmatize_sentence
 
-# nltk.download()
-# nltk.download('stopwords')
-# nltk.download('wordnet')
-# nltk.download('omw-1.4')
-# nltk.download('averaged_perceptron_tagger')
-print("=====================================================================")
-print("Before Preprocessing: ")
-df = pd.read_csv('invoices.csv')
-df.drop(df.columns[0], axis=1, inplace=True)
-df.rename(columns={"pages": "data"}, inplace=True)
-print(df.head())
+# Directory path containing the PDF files
+pdf_directory = "E:/Invoice Classification JPL 2023/Invoices Dataset"
 
-print("\n=====================================================================")
+# Get a list of all PDF files in the directory
+pdf_files = [file for file in os.listdir(pdf_directory) if file.endswith(".pdf")]
 
-print("After Preprocessing: ")
-df['data'] = df['data'].str.lower()
+# Output directory path for saving the converted images
+output_directory = "E:/Invoice Classification JPL 2023/Converted Invoices"
 
-# Remove unnecessary blank spaces
-df['data'] = df['data'].str.strip()
+# Create the output directory if it doesn't exist
+os.makedirs(output_directory, exist_ok=True)
 
-df['data'] = df['data'].str.lstrip()
-df['data'] = df['data'].apply(lambda x: ' '.join(x.split()))
+# Convert each PDF file to images
+for pdf_file in pdf_files:
+    pdf_path = os.path.join(pdf_directory, pdf_file)
+    
+    # Convert PDF to images
+    images = convert_from_path(pdf_path)
+    
+    # Save each image to the output directory
+    for i, image in enumerate(images):
+        image_path = os.path.join(output_directory, f"{pdf_file}_{i+1}.jpg")
+        image.save(image_path, "JPEG")
+        print(f"Conversion complete for: {pdf_path}")
 
-df['data'] = df['data'].apply(lambda x: re.sub(r'[^\w\s]', '', x))
-
-# Replace multiple consecutive spaces with a single space
-df['data'] = df['data'].apply(lambda x: re.sub(r'\s+', ' ', x))
-
-# Display the updated dataframe
-print(df.head())
-print("\n================================================================")
-
-print("After Tokenization: ")
-df['tokens'] = df['data'].apply(lambda x: word_tokenize(x))
-print(df.head())
-
-print("\n================================================================")
-print('After Removing Stopwords: ')
-stop_words = set(stopwords.words('english'))
-
-df['tokens'] = df['tokens'].apply(lambda x: [word for word in x if word.lower() not in stop_words])
-print(df.head())
-
-print("\n================================================================")
-print('After Lemmatization: ')
-lemmatizer = WordNetLemmatizer()
-df['tokens'] = df['tokens'].apply(lambda x: [lemmatizer.lemmatize(word) for word in x])
-print(df.head())
-
-df.to_csv('cleaned_invoices.csv')
+print("All PDF files have been converted and saved as images.")
